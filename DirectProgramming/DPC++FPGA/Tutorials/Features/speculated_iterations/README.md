@@ -6,7 +6,7 @@ This FPGA tutorial demonstrates applying the `speculated_iterations` attribute t
 
 | Optimized for                     | Description
 ---                                 |---
-| OS                                | Linux* Ubuntu* 18.04; Windows* 10
+| OS                                | Linux* Ubuntu* 18.04
 | Hardware                          | Intel® Programmable Acceleration Card (PAC) with Intel Arria® 10 GX FPGA; <br> Intel® Programmable Acceleration Card (PAC) with Intel Stratix® 10 SX FPGA
 | Software                          | Intel® oneAPI DPC++ Compiler (Beta) <br> Intel® FPGA Add-On for oneAPI Base Toolkit 
 | What you will learn               |  What the `speculated_iterations` attribute does <br> How to apply the `speculated_iterations` attribute to loops in your program <br> How to determine the optimal number of speculated iterations
@@ -104,35 +104,9 @@ When compiling for FPGA hardware, it is recommended to increase the job timeout 
      ``` 
 3. (Optional) As the above hardware compile may take several hours to complete, an Intel® PAC with Intel Arria® 10 GX FPGA precompiled binary can be downloaded <a href="https://software.intel.com/content/dam/develop/external/us/en/documents/speculated_iterations.fpga.tar.gz" download>here</a>.
 
-### On a Windows* System
-Note: `cmake` is not yet supported on Windows. A build.ninja file is provided instead. 
-
-1. Enter the source file directory.
-   ```
-   cd src
-   ```
-
-2. Compile the design. The following build targets are provided, matching the recommended development flow:
-
-   * Compile for emulation (fast compile time, targets emulated FPGA device): 
-      ```
-      ninja fpga_emu
-      ```
-
-   * Generate the optimization report:
-
-     ```
-     ninja report
-     ```
-     If you are targeting Intel® PAC with Intel Stratix® 10 SX FPGA, instead use:
-     ```
-     ninja report_s10_pac
-     ```     
-   * Compiling for FPGA hardware is not yet supported on Windows.
- 
  ### In Third-Party Integrated Development Environments (IDEs)
 
-You can compile and run this tutorial in the Eclipse* IDE (in Linux*) and the Visual Studio* IDE (in Windows*). For instructions, refer to the following link: [Intel® oneAPI DPC++ FPGA Workflows on Third-Party IDEs](https://software.intel.com/en-us/articles/intel-oneapi-dpcpp-fpga-workflow-on-ide)
+You can compile and run this tutorial in the Eclipse* IDE (in Linux*). For instructions, refer to the following link: [Intel® oneAPI DPC++ FPGA Workflows on Third-Party IDEs](https://software.intel.com/en-us/articles/intel-oneapi-dpcpp-fpga-workflow-on-ide)
 
 ## Examining the Reports
 Locate `report.html` in the `speculated_iterations_report.prj/reports/` or `speculated_iterations_s10_pac_report.prj/reports/` directory. Open the report in any of Chrome*, Firefox*, Edge*, or Internet Explorer*.
@@ -151,7 +125,6 @@ These results make sense when you recall that the loop exit computation has a la
  1. Run the sample on the FPGA emulator (the kernel executes on the CPU):
      ```
      ./speculated iterations.fpga_emu     (Linux)
-     speculated iterations.fpga_emu.exe   (Windows)
      ```
 2. Run the sample on the FPGA device:
      ```
