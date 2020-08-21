@@ -12,7 +12,7 @@ This FPGA tutorial demonstrates applying the `speculated_iterations` attribute t
 | What you will learn               |  What the `speculated_iterations` attribute does <br> How to apply the `speculated_iterations` attribute to loops in your program <br> How to determine the optimal number of speculated iterations
 | Time to complete                  | 15 minutes
 
-_Notice: Limited support in Windows*; compiling for FPGA hardware is not supported in Windows*_
+_Notice: This code sample is not yet supported in Windows*_
 
 ## Purpose
 Loop speculation is an advanced loop pipelining optimization technique. It enables loop iterations to be initiated before determining whether they should have been initiated. "Speculated iterations" are those iterations that launch before the exit condition computation has completed. This is beneficial when the computation of the exit condition is preventing effective loop pipelining.
