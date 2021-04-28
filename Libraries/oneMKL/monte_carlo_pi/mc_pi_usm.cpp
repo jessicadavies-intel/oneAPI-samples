@@ -13,17 +13,22 @@
 *******************************************************************************/
 
 #include <iostream>
+#include <numeric>
 #include <vector>
+#include <numeric>
 
 #include <CL/sycl.hpp>
+#include "oneapi/mkl.hpp"
 
-#include "mkl_rng_sycl.hpp"
-
-
-// Temporary code for beta08 compatibility. oneMKL routines
-//  move to the oneapi namespace in beta09.
-namespace oneapi {}
 using namespace oneapi;
+
+// Temporary code for beta08 compatibility. Reduce routine is moved from intel::
+// to ONEAPI:: namespace
+#if __SYCL_COMPILER_VERSION < 20200902L
+using sycl::intel::reduce;
+#else
+using sycl::ONEAPI::reduce;
+#endif
 
 // Value of Pi with many exact digits to compare with estimated value of Pi
 static const auto pi = 3.1415926535897932384626433832795;
@@ -73,7 +78,7 @@ double estimate_pi(sycl::queue& q, size_t n_points) {
                     count += 1;
                 }
             }
-            count_ptr[item.get_group_linear_id()] = sycl::intel::reduce(item.get_group(), count, std::plus<size_t>());
+            count_ptr[item.get_group_linear_id()] = reduce(item.get_group(), count, std::plus<size_t>());
         });
     });
 

@@ -43,14 +43,11 @@
 #include <list>
 #include <vector>
 
-#include "mkl_sycl.hpp"
 #include <CL/sycl.hpp>
+#include "oneapi/mkl.hpp"
 
 #include "utils.hpp"
 
-// Temporary code for beta08 compatibility. oneMKL routines
-//  move to the oneapi namespace in beta09.
-namespace oneapi {}
 using namespace oneapi;
 
 

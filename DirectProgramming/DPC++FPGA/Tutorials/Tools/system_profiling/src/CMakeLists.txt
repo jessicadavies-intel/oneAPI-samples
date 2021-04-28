@@ -1,52 +1,55 @@
+# To see a Makefile equivalent of this build system:
+# https://github.com/oneapi-src/oneAPI-samples/blob/master/DirectProgramming/DPC++/ProjectTemplates/makefile-fpga
+
 set(SOURCE_FILE double_buffering.cpp)
 set(TARGET_NAME double_buffering)
 set(EMULATOR_TARGET ${TARGET_NAME}.fpga_emu)
 set(FPGA_TARGET ${TARGET_NAME}.fpga)
 
-# Intel supported FPGA Boards and their names
-set(A10_PAC_BOARD_NAME "intel_a10gx_pac:pac_a10")
-set(S10_PAC_BOARD_NAME "intel_s10sx_pac:pac_s10")
+# FPGA board selection
+if(NOT DEFINED FPGA_BOARD)
+    set(FPGA_BOARD "intel_a10gx_pac:pac_a10")
+    message(STATUS "FPGA_BOARD was not specified.\
+                    \nConfiguring the design to run on the default FPGA board ${FPGA_BOARD} (Intel(R) PAC with Intel Arria(R) 10 GX FPGA). \
+                    \nPlease refer to the README for information on board selection.")
+else()
+    message(STATUS "Configuring the design to run on FPGA board ${FPGA_BOARD}")
+endif()
 
-# Assume target is the Intel(R) PAC with Intel Arria(R) 10 GX FPGA 
-SET(_FPGA_BOARD ${A10_PAC_BOARD_NAME})
-
-# Check if target is the Intel(R) PAC with Intel Stratix(R) 10 SX FPGA
-IF (NOT DEFINED FPGA_BOARD)
-    MESSAGE(STATUS "\tFPGA_BOARD was not specified. Configuring the design to run on the Intel(R) Programmable Acceleration Card (PAC) with Intel Arria(R) 10 GX FPGA. Please refer to the README for more information on how to run the design on the Intel(R) PAC with Intel Stratix(R) 10 SX FPGA.")
-
-ELSEIF(FPGA_BOARD STREQUAL ${A10_PAC_BOARD_NAME})
-    MESSAGE(STATUS "\tConfiguring the design to run on the Intel(R) Programmable Acceleration Card (PAC) with Intel Arria(R) 10 GX FPGA.")
-
-ELSEIF(FPGA_BOARD STREQUAL ${S10_PAC_BOARD_NAME})
-    MESSAGE(STATUS "\tConfiguring the design to run on the Intel(R) Programmable Acceleration Card (PAC) with Intel Stratix(R) 10 SX FPGA.")
-    SET(_FPGA_BOARD ${S10_PAC_BOARD_NAME})
-
-ELSE()
-    MESSAGE(STATUS "\tAn invalid board name was passed in using the FPGA_BOARD flag. Configuring the design to run on the Intel(R) Programmable Acceleration Card (PAC) with Intel Arria(R) 10 GX FPGA. Please refer to the README for the list of valid board names.")
-ENDIF()
-
-set(HARDWARE_COMPILE_FLAGS "-fintelfpga")
-
-# use cmake -D USER_HARDWARE_FLAGS=<flags> to set extra flags for FPGA backend compilation
-set(HARDWARE_LINK_FLAGS "-fintelfpga -Xshardware -Xsboard=${_FPGA_BOARD} ${USER_HARDWARE_FLAGS}")
-
+# A DPC++ ahead-of-time (AoT) compile processes the device code in two stages.
+# 1. The "compile" stage compiles the device code to an intermediate representation (SPIR-V).
+# 2. The "link" stage invokes the compiler's FPGA backend before linking.
+#    For this reason, FPGA backend flags must be passed as link flags in CMake.
 set(EMULATOR_COMPILE_FLAGS "-fintelfpga -DFPGA_EMULATOR")
 set(EMULATOR_LINK_FLAGS "-fintelfpga")
+set(HARDWARE_COMPILE_FLAGS "-fintelfpga")
+set(HARDWARE_LINK_FLAGS "-fintelfpga -Xshardware -Xsboard=${FPGA_BOARD} ${USER_HARDWARE_FLAGS}")
+# use cmake -D USER_HARDWARE_FLAGS=<flags> to set extra flags for FPGA backend compilation
 
-# fpga emulator
+###############################################################################
+### FPGA Emulator
+###############################################################################
+# To compile in a single command:
+#    dpcpp -fintelfpga -DFPGA_EMULATOR double_buffering.cpp -o double_buffering.fpga_emu
+# CMake executes:
+#    [compile] dpcpp -fintelfpga -DFPGA_EMULATOR -o double_buffering.cpp.o -c double_buffering.cpp
+#    [link]    dpcpp -fintelfpga double_buffering.cpp.o -o double_buffering.fpga_emu
 add_executable(${EMULATOR_TARGET} ${SOURCE_FILE})
+set_target_properties(${EMULATOR_TARGET} PROPERTIES COMPILE_FLAGS "${EMULATOR_COMPILE_FLAGS}")
+set_target_properties(${EMULATOR_TARGET} PROPERTIES LINK_FLAGS "${EMULATOR_LINK_FLAGS}")
 add_custom_target(fpga_emu DEPENDS ${EMULATOR_TARGET})
-set_target_properties(${EMULATOR_TARGET} PROPERTIES COMPILE_FLAGS ${EMULATOR_COMPILE_FLAGS})
-set_target_properties(${EMULATOR_TARGET} PROPERTIES LINK_FLAGS ${EMULATOR_LINK_FLAGS})
 
-# fpga
+###############################################################################
+### FPGA Hardware
+###############################################################################
+# To compile in a single command:
+#   dpcpp -fintelfpga -Xshardware -Xsboard=<FPGA_BOARD> double_buffering.cpp -o double_buffering.fpga
+# CMake executes:
+#   [compile] dpcpp -fintelfpga -o double_buffering.cpp.o -c double_buffering.cpp
+#   [link]    dpcpp -fintelfpga -Xshardware -Xsboard=<FPGA_BOARD> double_buffering.cpp.o -o double_buffering.fpga
 add_executable(${FPGA_TARGET} EXCLUDE_FROM_ALL ${SOURCE_FILE})
 add_custom_target(fpga DEPENDS ${FPGA_TARGET})
-set_target_properties(${FPGA_TARGET} PROPERTIES COMPILE_FLAGS ${HARDWARE_COMPILE_FLAGS})
-set_target_properties(${FPGA_TARGET} PROPERTIES LINK_FLAGS ${HARDWARE_LINK_FLAGS})
-
-
-# run
-add_custom_target(run
-                  COMMAND ../${TARGET_NAME}.fpga_emu
-                  DEPENDS ${TARGET_NAME}.fpga_emu)
+set_target_properties(${FPGA_TARGET} PROPERTIES COMPILE_FLAGS "${HARDWARE_COMPILE_FLAGS}")
+set_target_properties(${FPGA_TARGET} PROPERTIES LINK_FLAGS "${HARDWARE_LINK_FLAGS} -reuse-exe=${CMAKE_BINARY_DIR}/${FPGA_TARGET}")
+# The -reuse-exe flag enables rapid recompilation of host-only code changes.
+# See DPC++FPGA/GettingStarted/fast_recompile for details.

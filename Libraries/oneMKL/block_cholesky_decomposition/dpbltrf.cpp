@@ -10,14 +10,11 @@
 *      Function DPBLTRF for Cholesky factorization of symmetric
 *         positive definite block tridiagonal matrix.
 ************************************************************************/
-#include <CL/sycl.hpp>
 #include <cstdint>
-#include "mkl.h"
-#include "mkl_sycl.hpp"
 
-// Temporary code for beta08 compatibility. oneMKL routines
-//  move to the oneapi namespace in beta09.
-namespace oneapi {}
+#include <CL/sycl.hpp>
+#include "oneapi/mkl.hpp"
+
 using namespace oneapi;
 
 /************************************************************************
@@ -131,7 +128,7 @@ int64_t dpbltrf(cl::sycl::queue queue, int64_t n, int64_t nb, double* d, int64_t
         sycl::free(scratchpad, context);
     } catch(mkl::lapack::exception const& e) {
         // Handle LAPACK related exceptions happened during synchronous call
-        std::cout << "Unexpected exception caught during synchronous call to LAPACK API:\nreason: " << e.reason() << "\ninfo: " << e.info() << std::endl;
+        std::cout << "Unexpected exception caught during synchronous call to LAPACK API:\ninfo: " << e.info() << std::endl;
         if (e.info() > 0) {
         // INFO is equal to the 'global' index of the element u_ii of the factor
         // U which is equal to zero
@@ -160,7 +157,7 @@ int64_t dpbltrf(cl::sycl::queue queue, int64_t n, int64_t nb, double* d, int64_t
             sycl::free(scratchpad, context);
         } catch(mkl::lapack::exception const& e) {
             // Handle LAPACK related exceptions happened during synchronous call
-            std::cout << "Unexpected exception caught during synchronous call to LAPACK API:\nreason: " << e.reason() << "\ninfo: " << e.info() << std::endl;
+            std::cout << "Unexpected exception caught during synchronous call to LAPACK API:\ninfo: " << e.info() << std::endl;
             if (e.info() > 0) {
             // INFO is equal to the 'global' index of the element u_ii of the factor
             // U which is equal to zero

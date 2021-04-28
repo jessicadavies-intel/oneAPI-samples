@@ -32,16 +32,13 @@
 * To test the solution function TES_RES1 is called.
 */
 
-#include <CL/sycl.hpp>
 #include <cstdint>
 #include <iostream>
 #include <vector>
-#include "mkl.h"
-#include "mkl_sycl.hpp"
 
-// Temporary code for beta08 compatibility. oneMKL routines
-//  move to the oneapi namespace in beta09.
-namespace oneapi {}
+#include <CL/sycl.hpp>
+#include "oneapi/mkl.hpp"
+
 using namespace oneapi;
 
 template<typename T>
@@ -69,7 +66,7 @@ int main() {
             } catch(mkl::lapack::exception const& e) {
                 // Handle LAPACK related exceptions happened during asynchronous call
                 info = e.info();
-                std::cout << "Unexpected exception caught during asynchronous LAPACK operation:\n" << e.reason() << "\ninfo: " << e.info() << std::endl;
+                std::cout << "Unexpected exception caught during asynchronous LAPACK operation:\ninfo: " << e.info() << std::endl;
             } catch(cl::sycl::exception const& e) {
                 // Handle not LAPACK related exceptions happened during asynchronous call
                 std::cout << "Unexpected exception caught during asynchronous operation:\n" << e.what() << std::endl;

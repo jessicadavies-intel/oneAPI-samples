@@ -37,16 +37,13 @@
 *
 * ||.|| denotes Frobenius norm of a respective matrix           
 */
-#include <CL/sycl.hpp>
 #include <cstdint>
 #include <iostream>
 #include <vector>
-#include "mkl.h"
-#include "mkl_sycl.hpp"
 
-// Temporary code for beta08 compatibility. oneMKL routines
-//  move to the oneapi namespace in beta09.
-namespace oneapi {}
+#include <CL/sycl.hpp>
+#include "oneapi/mkl.hpp"
+
 using namespace oneapi;
 
 int64_t dgeblttrf(sycl::queue, int64_t n, int64_t nb, double* d, double* dl, double* du1, double* du2, int64_t* ipiv);
@@ -77,7 +74,7 @@ int main() {
             } catch(mkl::lapack::exception const& e) {
                 // Handle LAPACK related exceptions happened during asynchronous call
                 info = e.info();
-                std::cout << "Unexpected exception caught during asynchronous LAPACK operation:\n" << e.reason() << "\ninfo: " << e.info() << std::endl;
+                std::cout << "Unexpected exception caught during asynchronous LAPACK operation:\ninfo: " << e.info() << std::endl;
             } catch(sycl::exception const& e) {
                 // Handle not LAPACK related exceptions happened during asynchronous call
                 std::cout << "Unexpected exception caught during asynchronous operation:\n" << e.what() << std::endl;
@@ -90,8 +87,14 @@ int main() {
     sycl::queue queue(device, error_handler);
     sycl::context context = queue.get_context();
 
+    if (device.is_gpu() && device.get_platform().get_backend() != sycl::backend::level_zero) {
+        std::cerr << "This sample requires Level Zero when running on GPUs." << std::endl;
+        std::cerr << "Please check your system configuration." << std::endl;
+        return 0;
+    }
+
     if (device.get_info<sycl::info::device::double_fp_config>().empty()) {
-        std::cerr << "The sample uses double precision, which is not supported" << std::endl;
+        std::cerr << "This sample uses double precision, which is not supported" << std::endl;
         std::cerr << "by the selected device. Quitting." << std::endl;
         return 0;
     }
@@ -127,7 +130,7 @@ int main() {
     std::cout << "Testing accuracy of solution of linear equations system" << std::endl;
     std::cout << "with randomly generated block tridiagonal coefficient" << std::endl;
     std::cout << "matrix by calculating ratios of residuals" << std::endl;
-    std::cout << "to RHS vectors norms." << std::endl;
+    std::cout << "to RHS vectors' norms." << std::endl;
 
     // LU factorization of the coefficient matrix      
     info = dgeblttrf(queue, n, nb, d.data(), dl.data(), du1.data(), du2.data(), ipiv.data());

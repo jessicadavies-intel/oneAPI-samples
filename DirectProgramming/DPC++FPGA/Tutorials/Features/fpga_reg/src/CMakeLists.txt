@@ -1,3 +1,6 @@
+# To see a Makefile equivalent of this build system:
+# https://github.com/oneapi-src/oneAPI-samples/blob/master/DirectProgramming/DPC++/ProjectTemplates/makefile-fpga
+
 set(SOURCE_FILE fpga_reg.cpp)
 set(TARGET_NAME fpga_reg)
 set(TARGET_NAME_REG fpga_reg_registered)
@@ -5,107 +8,77 @@ set(EMULATOR_TARGET ${TARGET_NAME}.fpga_emu)
 set(FPGA_TARGET ${TARGET_NAME}.fpga)
 set(FPGA_TARGET_REG ${TARGET_NAME_REG}.fpga)
 
-# Intel supported FPGA Boards and their names
-set(A10_PAC_BOARD_NAME "intel_a10gx_pac:pac_a10")
-set(S10_PAC_BOARD_NAME "intel_s10sx_pac:pac_s10")
+# FPGA board selection
+if(NOT DEFINED FPGA_BOARD)
+    set(FPGA_BOARD "intel_a10gx_pac:pac_a10")
+    message(STATUS "FPGA_BOARD was not specified.\
+                    \nConfiguring the design to run on the default FPGA board ${FPGA_BOARD} (Intel(R) PAC with Intel Arria(R) 10 GX FPGA). \
+                    \nPlease refer to the README for information on board selection.")
+else()
+    message(STATUS "Configuring the design to run on FPGA board ${FPGA_BOARD}")
+endif()
 
-# Assume target is the Intel(R) PAC with Intel Arria(R) 10 GX FPGA 
-SET(_FPGA_BOARD ${A10_PAC_BOARD_NAME})
+# This is a Windows-specific flag that enables exception handling in host code
+if(WIN32)
+    set(WIN_FLAG "/EHsc")
+endif()
 
-# Check if target is the Intel(R) PAC with Intel Stratix(R) 10 SX FPGA
-IF (NOT DEFINED FPGA_BOARD)
-    MESSAGE(STATUS "\tFPGA_BOARD was not specified. Configuring the design to run on the Intel(R) Programmable Acceleration Card (PAC) with Intel Arria(R) 10 GX FPGA. Please refer to the README for more information on how to run the design on the Intel(R) PAC with Intel Stratix(R) 10 SX FPGA.")
-
-ELSEIF(FPGA_BOARD STREQUAL ${A10_PAC_BOARD_NAME})
-    MESSAGE(STATUS "\tConfiguring the design to run on the Intel(R) Programmable Acceleration Card (PAC) with Intel Arria(R) 10 GX FPGA.")
-
-ELSEIF(FPGA_BOARD STREQUAL ${S10_PAC_BOARD_NAME})
-    MESSAGE(STATUS "\tConfiguring the design to run on the Intel(R) Programmable Acceleration Card (PAC) with Intel Stratix(R) 10 SX FPGA.")
-    SET(_FPGA_BOARD ${S10_PAC_BOARD_NAME})
-
-ELSE()
-    MESSAGE(STATUS "\tAn invalid board name was passed in using the FPGA_BOARD flag. Configuring the design to run on the Intel(R) Programmable Acceleration Card (PAC) with Intel Arria(R) 10 GX FPGA. Please refer to the README for the list of valid board names.")
-ENDIF()
-
-set(HARDWARE_COMPILE_FLAGS "-fintelfpga")
-
-# use cmake -D USER_HARDWARE_FLAGS=<flags> to set extra flags for FPGA backend compilation
-set(HARDWARE_LINK_FLAGS "-fintelfpga -Xshardware -Xsboard=${_FPGA_BOARD} ${USER_HARDWARE_FLAGS}")
-
-set(EMULATOR_COMPILE_FLAGS "-fintelfpga -DFPGA_EMULATOR")
+# A DPC++ ahead-of-time (AoT) compile processes the device code in two stages.
+# 1. The "compile" stage compiles the device code to an intermediate representation (SPIR-V).
+# 2. The "link" stage invokes the compiler's FPGA backend before linking.
+#    For this reason, FPGA backend flags must be passed as link flags in CMake.
+set(EMULATOR_COMPILE_FLAGS "${WIN_FLAG} -fintelfpga -DFPGA_EMULATOR")
 set(EMULATOR_LINK_FLAGS "-fintelfpga")
+set(HARDWARE_COMPILE_FLAGS "${WIN_FLAG} -fintelfpga")
+set(HARDWARE_LINK_FLAGS "-fintelfpga -Xshardware -Xsboard=${FPGA_BOARD} ${USER_HARDWARE_FLAGS}")
+# use cmake -D USER_HARDWARE_FLAGS=<flags> to set extra flags for FPGA backend compilation
 
-# fpga emulator
-if(WIN32)
-    set(WIN_EMULATOR_TARGET ${EMULATOR_TARGET}.exe)
-    add_custom_target(fpga_emu DEPENDS ${WIN_EMULATOR_TARGET})
-    separate_arguments(WIN_EMULATOR_COMPILE_FLAGS WINDOWS_COMMAND "${EMULATOR_COMPILE_FLAGS}")
-    add_custom_command(OUTPUT ${WIN_EMULATOR_TARGET} 
-             COMMAND ${CMAKE_CXX_COMPILER} ${WIN_EMULATOR_COMPILE_FLAGS} /GX ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE} -o ${CMAKE_BINARY_DIR}/${WIN_EMULATOR_TARGET}
-             DEPENDS ${SOURCE_FILE})
+###############################################################################
+### FPGA Emulator
+###############################################################################
+# To compile in a single command:
+#    dpcpp -fintelfpga -DFPGA_EMULATOR fpga_compile.cpp -o fpga_compile.fpga_emu
+# CMake executes:
+#    [compile] dpcpp -fintelfpga -DFPGA_EMULATOR -o fpga_compile.cpp.o -c fpga_compile.cpp
+#    [link]    dpcpp -fintelfpga fpga_compile.cpp.o -o fpga_compile.fpga_emu
+add_executable(${EMULATOR_TARGET} ${SOURCE_FILE})
+set_target_properties(${EMULATOR_TARGET} PROPERTIES COMPILE_FLAGS "${EMULATOR_COMPILE_FLAGS}")
+set_target_properties(${EMULATOR_TARGET} PROPERTIES LINK_FLAGS "${EMULATOR_LINK_FLAGS}")
+add_custom_target(fpga_emu DEPENDS ${EMULATOR_TARGET})
 
-else()
-    add_executable(${EMULATOR_TARGET} ${SOURCE_FILE})
-    add_custom_target(fpga_emu DEPENDS ${EMULATOR_TARGET})
-    set_target_properties(${EMULATOR_TARGET} PROPERTIES COMPILE_FLAGS ${EMULATOR_COMPILE_FLAGS})
-    set_target_properties(${EMULATOR_TARGET} PROPERTIES LINK_FLAGS ${EMULATOR_LINK_FLAGS})
-endif()
+###############################################################################
+### Generate Report
+###############################################################################
+# To compile manually:
+#   dpcpp -fintelfpga -Xshardware -Xsboard=<FPGA_BOARD> -fsycl-link=early fpga_reg.cpp -o fpga_reg_report.a
+set(FPGA_EARLY_IMAGE ${TARGET_NAME}_report.a)
+set(FPGA_EARLY_IMAGE_REG ${TARGET_NAME_REG}_report.a)
+# The compile output is not an executable, but an intermediate compilation result unique to DPC++.
+add_executable(${FPGA_EARLY_IMAGE} ${SOURCE_FILE})
+add_executable(${FPGA_EARLY_IMAGE_REG} ${SOURCE_FILE})
+add_custom_target(report DEPENDS ${FPGA_EARLY_IMAGE} ${FPGA_EARLY_IMAGE_REG})
+set_target_properties(${FPGA_EARLY_IMAGE} PROPERTIES COMPILE_FLAGS "${HARDWARE_COMPILE_FLAGS}")
+set_target_properties(${FPGA_EARLY_IMAGE} PROPERTIES LINK_FLAGS "${HARDWARE_LINK_FLAGS} -fsycl-link=early")
 
-# fpga
-if(WIN32)
-    add_custom_target(fpga
-            COMMAND echo "FPGA hardware flow is not supported in Windows")
-else()
-    add_executable(${FPGA_TARGET} EXCLUDE_FROM_ALL ${SOURCE_FILE})
-    add_executable(${FPGA_TARGET_REG} EXCLUDE_FROM_ALL ${SOURCE_FILE})
-    add_custom_target(fpga DEPENDS ${FPGA_TARGET} ${FPGA_TARGET_REG})
+set_target_properties(${FPGA_EARLY_IMAGE_REG} PROPERTIES COMPILE_FLAGS "${HARDWARE_COMPILE_FLAGS} -DUSE_FPGA_REG")
+set_target_properties(${FPGA_EARLY_IMAGE_REG} PROPERTIES LINK_FLAGS "${HARDWARE_LINK_FLAGS} -fsycl-link=early")
+# fsycl-link=early stops the compiler after RTL generation, before invoking Quartus
 
-    set_target_properties(${FPGA_TARGET} PROPERTIES COMPILE_FLAGS ${HARDWARE_COMPILE_FLAGS})
-    set_target_properties(${FPGA_TARGET} PROPERTIES LINK_FLAGS ${HARDWARE_LINK_FLAGS})
+###############################################################################
+### FPGA Hardware
+###############################################################################
+# To compile in a single command:
+#   dpcpp -fintelfpga -Xshardware -Xsboard=<FPGA_BOARD> fpga_reg.cpp -o fpga_reg.fpga
+# CMake executes:
+#   [compile] dpcpp -fintelfpga -o fpga_reg.cpp.o -c fpga_reg.cpp
+#   [link]    dpcpp -fintelfpga -Xshardware -Xsboard=<FPGA_BOARD> fpga_reg.cpp.o -o fpga_reg.fpga
+add_executable(${FPGA_TARGET} EXCLUDE_FROM_ALL ${SOURCE_FILE})
+add_executable(${FPGA_TARGET_REG} EXCLUDE_FROM_ALL ${SOURCE_FILE})
+add_custom_target(fpga DEPENDS ${FPGA_TARGET} ${FPGA_TARGET_REG})
+set_target_properties(${FPGA_TARGET} PROPERTIES COMPILE_FLAGS "${HARDWARE_COMPILE_FLAGS}")
+set_target_properties(${FPGA_TARGET} PROPERTIES LINK_FLAGS "${HARDWARE_LINK_FLAGS} -reuse-exe=${CMAKE_BINARY_DIR}/${FPGA_TARGET}")
+# The -reuse-exe flag enables rapid recompilation of host-only code changes.
+# See DPC++FPGA/GettingStarted/fast_recompile for details.
+set_target_properties(${FPGA_TARGET_REG} PROPERTIES COMPILE_FLAGS "${HARDWARE_COMPILE_FLAGS} -DUSE_FPGA_REG")
+set_target_properties(${FPGA_TARGET_REG} PROPERTIES LINK_FLAGS "${HARDWARE_LINK_FLAGS} -reuse-exe=${CMAKE_BINARY_DIR}/${FPGA_TARGET_REG}")
 
-    set_target_properties(${FPGA_TARGET_REG} PROPERTIES COMPILE_FLAGS "${HARDWARE_COMPILE_FLAGS} -DUSE_FPGA_REG")
-    set_target_properties(${FPGA_TARGET_REG} PROPERTIES LINK_FLAGS ${HARDWARE_LINK_FLAGS})
-endif()
-
-# report
-if(WIN32)
-    set(REPORT ${TARGET_NAME}_report.a)
-    set(REPORT_REG ${TARGET_NAME_REG}_report.a)
-
-    add_custom_target(report DEPENDS ${REPORT} ${REPORT_REG})
-
-    separate_arguments(HARDWARE_LINK_FLAGS_LIST WINDOWS_COMMAND "${HARDWARE_LINK_FLAGS}")
-
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE} ${CMAKE_BINARY_DIR}/${TARGET_NAME}/${SOURCE_FILE} COPYONLY)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE} ${CMAKE_BINARY_DIR}/${TARGET_NAME_REG}/${SOURCE_FILE} COPYONLY)
-
-    add_custom_command(OUTPUT ${REPORT}
-        COMMAND ${CMAKE_CXX_COMPILER} /EHsc ${CMAKE_CXX_FLAGS} ${HARDWARE_LINK_FLAGS_LIST} -fsycl-link ${CMAKE_BINARY_DIR}/${TARGET_NAME}/${SOURCE_FILE} -o ${CMAKE_BINARY_DIR}/${REPORT}
-                 DEPENDS ${SOURCE_FILE})
-
-    add_custom_command(OUTPUT ${REPORT_REG}
-        COMMAND ${CMAKE_CXX_COMPILER} /EHsc ${CMAKE_CXX_FLAGS} ${HARDWARE_LINK_FLAGS_LIST} -DUSE_FPGA_REG -fsycl-link ${CMAKE_BINARY_DIR}/${TARGET_NAME_REG}/${SOURCE_FILE} -o ${CMAKE_BINARY_DIR}/${REPORT_REG}
-                 DEPENDS ${SOURCE_FILE})
-
-else()
-    set(REPORT ${TARGET_NAME}_report.a)
-    set(REPORT_REG ${TARGET_NAME_REG}_report.a)
-
-    add_custom_target(report DEPENDS ${REPORT} ${REPORT_REG})
-
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE} ${SOURCE_FILE} COPYONLY)
-
-    separate_arguments(HARDWARE_LINK_FLAGS_LIST UNIX_COMMAND "${HARDWARE_LINK_FLAGS}")
-    add_custom_command(OUTPUT ${REPORT}
-                 COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} ${HARDWARE_LINK_FLAGS_LIST} -fsycl-link ${SOURCE_FILE} -o ${CMAKE_BINARY_DIR}/${REPORT}
-                 DEPENDS ${SOURCE_FILE})
-
-    add_custom_command(OUTPUT ${REPORT_REG}
-                 COMMAND ${CMAKE_CXX_COMPILER} ${CMAKE_CXX_FLAGS} ${HARDWARE_LINK_FLAGS_LIST} -DUSE_FPGA_REG -fsycl-link ${SOURCE_FILE} -o ${CMAKE_BINARY_DIR}/${REPORT_REG}
-                 DEPENDS ${SOURCE_FILE})
-endif()
-
-# run
-add_custom_target(run
-            COMMAND ../${TARGET_NAME}.fpga_emu
-            DEPENDS ${TARGET_NAME}.fpga_emu)

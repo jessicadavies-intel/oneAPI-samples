@@ -4,10 +4,14 @@
 // SPDX-License-Identifier: MIT
 // =============================================================
 #include <CL/sycl.hpp>
-#include <CL/sycl/intel/fpga_extensions.hpp>
+#include <CL/sycl/INTEL/fpga_extensions.hpp>
+#include <cmath>
 #include <iomanip>
 #include <random>
 #include <thread>
+
+// dpc_common.hpp can be found in the dev-utilities include folder.
+// e.g., $ONEAPI_ROOT/dev-utilities//include/dpc_common.hpp
 #include "dpc_common.hpp"
 
 using namespace sycl;
@@ -16,7 +20,7 @@ using namespace sycl;
 constexpr int kLocalN = 5;
 
 // # times to execute the kernel. kTimes must be >= kLocalN
-#if defined(FPGA_EMULATOR) 
+#if defined(FPGA_EMULATOR)
 constexpr int kTimes = 20;
 #else
 constexpr int kTimes = 100;
@@ -39,6 +43,8 @@ constexpr int kNumRuns = 4;
 
 bool pass = true;
 
+// Forward declare the kernel name in the global scope.
+// This FPGA best practice reduces name mangling in the optimization reports.
 class SimpleVpow;
 
 /*  Kernel function.
@@ -54,13 +60,13 @@ class SimpleVpow;
    to occur at the end of overall execution, not at the end of each individual
    kernel execution.
 */
-void SimplePow(std::unique_ptr<queue> &q, buffer<float, 1> &buffer_a,
+void SimplePow(sycl::queue &q, buffer<float, 1> &buffer_a,
                buffer<float, 1> &buffer_b, event &e) {
   // Submit to the queue and execute the kernel
-  e = q->submit([&](handler &h) {
+  e = q.submit([&](handler &h) {
     // Get kernel access to the buffers
-    auto accessor_a = buffer_a.get_access<access::mode::read>(h);
-    auto accessor_b = buffer_b.get_access<access::mode::discard_read_write>(h);
+    accessor accessor_a(buffer_a, h, read_only);
+    accessor accessor_b(buffer_b, h, read_write, noinit);
 
     const int num = kSize;
     const int p = kPow - 1;  // Assumes pow >= 2;
@@ -82,8 +88,8 @@ void SimplePow(std::unique_ptr<queue> &q, buffer<float, 1> &buffer_a,
   });
 
   event update_host_event;
-  update_host_event = q->submit([&](handler &h) {
-    auto accessor_b = buffer_b.get_access<access::mode::read>(h);
+  update_host_event = q.submit([&](handler &h) {
+    accessor accessor_b(buffer_b, h, read_only);
 
     /*
       Explicitly instruct the SYCL runtime to copy the kernel's output buffer
@@ -99,15 +105,13 @@ void SimplePow(std::unique_ptr<queue> &q, buffer<float, 1> &buffer_a,
     */
     h.update_host(accessor_b);
   });
-  
 }
 
 // Returns kernel execution time for a given SYCL event from a queue.
 ulong SyclGetExecTimeNs(event e) {
   ulong start_time =
       e.get_profiling_info<info::event_profiling::command_start>();
-  ulong end_time =
-      e.get_profiling_info<info::event_profiling::command_end>();
+  ulong end_time = e.get_profiling_info<info::event_profiling::command_end>();
   return (end_time - start_time);
 }
 
@@ -124,12 +128,16 @@ float MyPow(float input, int pow) {
    records execution time of the kernel that just completed. This is a natural
    place to do this because ProcessOutput() is blocked on kernel completion.
 */
-void ProcessOutput(buffer<float, 1> &output_buf,
-                   std::vector<float> &input_copy, int exec_number, event e,
+void ProcessOutput(buffer<float, 1> &output_buf, std::vector<float> &input_copy,
+                   int exec_number, event e,
                    ulong &total_kernel_time_per_slot) {
-  auto output_buf_acc = output_buf.get_access<access::mode::read>();
+  host_accessor output_buf_acc(output_buf, read_only);
   int num_errors = 0;
   int num_errors_to_print = 10;
+
+  // Max fractional difference between FPGA pow result and CPU pow result
+  // Anything greater than this will be considered an error
+  constexpr double epsilon = 0.01;
 
   /*  The use of update_host() in the kernel function allows for additional
      host-side operations to be performed here, in parallel with the buffer copy
@@ -138,8 +146,10 @@ void ProcessOutput(buffer<float, 1> &output_buf,
      done here and this is just a note that this is the place
       where you *could* do it. */
   for (int i = 0; i < kSize; i++) {
-    bool out_valid = (MyPow(input_copy.data()[i], kPow) != output_buf_acc[i]);
-    if ((num_errors < num_errors_to_print) && out_valid) {
+    const double expected_value = MyPow(input_copy.data()[i], kPow);
+    const bool out_invalid = std::abs((output_buf_acc[i] - expected_value) /
+                                      expected_value) > epsilon;
+    if ((num_errors < num_errors_to_print) && out_invalid) {
       if (num_errors == 0) {
         pass = false;
         std::cout << "Verification failed on kernel execution # " << exec_number
@@ -148,8 +158,8 @@ void ProcessOutput(buffer<float, 1> &output_buf,
       }
       std::cout << "Verification failed on kernel execution # " << exec_number
                 << ", at element " << i << ". Expected " << std::fixed
-                << std::setprecision(16) << MyPow(input_copy.data()[i], kPow)
-                << " but got " << output_buf_acc[i] << "\n";
+                << std::setprecision(16) << expected_value << " but got "
+                << output_buf_acc[i] << "\n";
       num_errors++;
     }
   }
@@ -167,9 +177,9 @@ void ProcessOutput(buffer<float, 1> &output_buf,
    ProcessOutput().
 */
 void ProcessInput(buffer<float, 1> &buf, std::vector<float> &copy) {
-  // We are generating completely new input data, so can use discard_write()
+  // We are generating completely new input data, so can use the noinit property
   // here to indicate we don't care about the SYCL buffer's current contents.
-  auto buf_acc = buf.get_access<access::mode::discard_write>();
+  host_accessor buf_acc(buf, write_only, noinit);
 
   // RNG seed
   auto seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -195,24 +205,22 @@ void ProcessInput(buffer<float, 1> &buf, std::vector<float> &copy) {
 int main() {
 // Create queue, get platform and device
 #if defined(FPGA_EMULATOR)
-  intel::fpga_emulator_selector device_selector;
+  INTEL::fpga_emulator_selector device_selector;
   std::cout << "\nEmulator output does not demonstrate true hardware "
                "performance. The design may need to run on actual hardware "
                "to observe the performance benefit of the optimization "
                "exemplified in this tutorial.\n\n";
 #else
-  intel::fpga_selector device_selector;
+  INTEL::fpga_selector device_selector;
 #endif
 
   try {
-    auto prop_list =
-        property_list{property::queue::enable_profiling()};
-    
-    std::unique_ptr<queue> q;
-    q.reset(new queue(device_selector, dpc_common::exception_handler, prop_list));
+    auto prop_list = property_list{property::queue::enable_profiling()};
 
-    platform platform = q->get_context().get_platform();
-    device device = q->get_device();
+    sycl::queue q(device_selector, dpc_common::exception_handler, prop_list);
+
+    platform platform = q.get_context().get_platform();
+    device device = q.get_device();
     std::cout << "Platform name: "
               << platform.get_info<info::platform::name>().c_str() << "\n";
     std::cout << "Device name: "
@@ -420,16 +428,17 @@ int main() {
       std::cout << "Verification FAILED\n";
       return 1;
     }
-  } catch (sycl::exception const& e) {
+  } catch (sycl::exception const &e) {
     // Catches exceptions in the host code
-    std::cout << "Caught a SYCL host exception:\n" << e.what() << "\n";
-    
+    std::cerr << "Caught a SYCL host exception:\n" << e.what() << "\n";
+
     // Most likely the runtime couldn't find FPGA hardware!
     if (e.get_cl_code() == CL_DEVICE_NOT_FOUND) {
-      std::cout << "If you are targeting an FPGA, please ensure that your "
+      std::cerr << "If you are targeting an FPGA, please ensure that your "
                    "system has a correctly configured FPGA board.\n";
-      std::cout << "If you are targeting the FPGA emulator, compile with "
-                   "-DFPGA_EMULATOR.\n"; 
+      std::cerr << "Run sys_check in the oneAPI root directory to verify.\n";
+      std::cerr << "If you are targeting the FPGA emulator, compile with "
+                   "-DFPGA_EMULATOR.\n";
     }
     std::terminate();
   }
