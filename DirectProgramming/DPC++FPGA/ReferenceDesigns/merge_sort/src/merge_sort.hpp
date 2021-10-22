@@ -98,13 +98,13 @@ std::vector<sycl::event> SubmitMergeSort(sycl::queue& q, size_t count, ValueT* b
   // the pipes connecting the different kernels of each merge unit
   // one set of pipes for each 'units' merge units
   using APipes =
-    PipeArray<APipeID, PipeType, kDefaultPipeDepth, units>;
+    fpga_tools::PipeArray<APipeID, PipeType, kDefaultPipeDepth, units>;
   using BPipes =
-    PipeArray<BPipeID, PipeType, kDefaultPipeDepth, units>;
+    fpga_tools::PipeArray<BPipeID, PipeType, kDefaultPipeDepth, units>;
   using MergePipes =
-    PipeArray<MergePipeID, PipeType, kDefaultPipeDepth, units>;
+    fpga_tools::PipeArray<MergePipeID, PipeType, kDefaultPipeDepth, units>;
   using InternalOutPipes =
-      PipeArray<InternalOutPipeID, PipeType, kDefaultPipeDepth, units>;
+      fpga_tools::PipeArray<InternalOutPipeID, PipeType, kDefaultPipeDepth, units>;
 
   //////////////////////////////////////////////////////////////////////////////
   // These defines make the latter code cleaner
@@ -287,7 +287,7 @@ std::vector<sycl::event> SubmitMergeSort(sycl::queue& q, size_t count, ValueT* b
   // front-end compiler will not use the extra pipes and therefore they
   // will NOT be instantiated in hardware
   using InternalMTPipes =
-    PipeArray<InternalMergeTreePipeID, PipeType, kDefaultPipeDepth,
+    fpga_tools::PipeArray<InternalMergeTreePipeID, PipeType, kDefaultPipeDepth,
                            kReductionLevels, units>;
 
   // create the merge tree connected by pipes to merge the sorted output

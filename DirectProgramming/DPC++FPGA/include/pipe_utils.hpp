@@ -123,6 +123,9 @@ struct write_currying<WriteFunc, BaseTy, std::index_sequence<I...>> {
 
 }  // namespace
 
+namespace sycl_toolkit {
+namespace oneapi {
+namespace fpga {
 // =============================================================
 // PipeArray
 // =============================================================
@@ -264,5 +267,9 @@ struct PipeDuplicator<Id, T> {
     // do nothing
   }
 };
+
+} // namespace fpga
+} // namespace oneapi
+} // namespace sycl_toolkit
 
 #endif /* __PIPE_UTILS_HPP__ */
