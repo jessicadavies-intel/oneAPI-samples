@@ -78,7 +78,7 @@
 // Internal Helper Functions/Structs
 // =============================================================
 
-namespace {
+namespace detail {
 
 template <typename T, typename, T begin, bool increase>
 struct integer_range_impl;
@@ -127,7 +127,7 @@ using make_integer_range = integer_range<T, begin, end>;
 template <std::size_t begin, std::size_t end>
 using make_index_range = integer_range<std::size_t, begin, end>;
 
-} // namespace
+} // namespace detail
 
 namespace sycl_toolkit {
 namespace oneapi {
@@ -172,7 +172,7 @@ constexpr void UnrolledLoop(F&& f) {
 //
 template <class ItType, ItType start, ItType end, class F>
 constexpr void UnrolledLoop(F&& f) {
-  UnrolledLoop(make_integer_range<ItType, start, end>{}, std::forward<F>(f));
+  UnrolledLoop(detail::make_integer_range<ItType, start, end>{}, std::forward<F>(f));
 }
 
 //
@@ -184,7 +184,7 @@ constexpr void UnrolledLoop(F&& f) {
 //
 template <std::size_t start, std::size_t end, class F>
 constexpr void UnrolledLoop(F&& f) {
-  UnrolledLoop(make_index_range<start, end>{}, std::forward<F>(f));
+  UnrolledLoop(detail::make_index_range<start, end>{}, std::forward<F>(f));
 }
 
 } // namespace fpga

@@ -8,8 +8,6 @@
 
 #include "impu_math.hpp"
 
-using namespace sycl;
-
 //
 // Creates a merge sort network.
 // Takes in two sorted lists ('a' and 'b') of size 'k_width' and merges them
@@ -97,13 +95,13 @@ void BitonicSortNetwork(sycl::vec<ValueT, k_width>& data, CompareFunc compare) {
 //
 template <typename Id, typename ValueT, typename IndexT, typename InPipe,
           unsigned char k_width, class CompareFunc>
-event SortNetworkKernel(queue& q, ValueT* out_ptr, IndexT total_count,
+sycl::event SortNetworkKernel(sycl::queue& q, ValueT* out_ptr, IndexT total_count,
                         CompareFunc compare) {
   // the number of loop iterations required to process all of the data
   const IndexT iterations = total_count / k_width;
 
   return q.single_task<Id>([=]() [[intel::kernel_args_restrict]] {
-    device_ptr<ValueT> out(out_ptr);
+    sycl::device_ptr<ValueT> out(out_ptr);
     for (IndexT i = 0; i < iterations; i++) {
       // read the input data from the pipe
       sycl::vec<ValueT, k_width> data = InPipe::read();

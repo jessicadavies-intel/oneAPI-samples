@@ -7,9 +7,7 @@
 
 #include "../dbdata.hpp"
 
-using namespace sycl;
-
-bool SubmitQuery1(queue& q, Database& dbinfo, DBDate low_date,
+bool SubmitQuery1(sycl::queue& q, Database& dbinfo, DBDate low_date,
                   std::array<DBDecimal, kQuery1OutSize>& sum_qty,
                   std::array<DBDecimal, kQuery1OutSize>& sum_base_price,
                   std::array<DBDecimal, kQuery1OutSize>& sum_disc_price,

@@ -7,8 +7,6 @@
 #include "sorting_networks.hpp"
 #include "impu_math.hpp"
 
-using namespace sycl;
-
 //
 // Streams in two sorted list of size 'in_count`, 'k_width' elements at a time,
 // from both InPipeA and InPipeB and merges them into a single sorted list of
@@ -18,7 +16,7 @@ using namespace sycl;
 template <typename Id, typename ValueT, typename IndexT, typename InPipeA,
           typename InPipeB, typename OutPipe, unsigned char k_width,
           class CompareFunc>
-event Merge(queue& q, IndexT total_count, IndexT in_count,
+sycl::event Merge(sycl::queue& q, IndexT total_count, IndexT in_count,
             CompareFunc compare) {
   // sanity check on k_width
   static_assert(k_width >= 1);

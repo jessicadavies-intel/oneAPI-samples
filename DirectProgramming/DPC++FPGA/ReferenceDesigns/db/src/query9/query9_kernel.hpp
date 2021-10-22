@@ -7,9 +7,7 @@
 
 #include "../dbdata.hpp"
 
-using namespace sycl;
-
-bool SubmitQuery9(queue& q, Database& dbinfo,
+bool SubmitQuery9(sycl::queue& q, Database& dbinfo,
                   std::string colour,
                   std::array<DBDecimal, 25 * 2020>& sum_profit,
                   double& kernel_latency, double& total_latency);

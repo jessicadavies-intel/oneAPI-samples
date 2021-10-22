@@ -7,9 +7,7 @@
 
 #include "../dbdata.hpp"
 
-using namespace sycl;
-
-bool SubmitQuery11(queue& q, Database& dbinfo,
+bool SubmitQuery11(sycl::queue& q, Database& dbinfo,
                    std::string& nation,
                    std::vector<DBIdentifier>& partkeys,
                    std::vector<DBDecimal>& values,

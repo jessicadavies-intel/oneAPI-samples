@@ -8,8 +8,6 @@
 #include "../db_utils/StreamingData.hpp"
 #include "../dbdata.hpp"
 
-using namespace sycl;
-
 //
 // A single row of the ORDERS table
 // with a subset of the columns (needed for this query)

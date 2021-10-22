@@ -13,6 +13,7 @@
 #include "../db_utils/ShannonIterator.hpp"
 #include "../db_utils/fifo_sort.hpp"
 
+using namespace sycl;
 using namespace std::chrono;
 
 namespace fpga_utils = sycl_toolkit::oneapi::fpga;

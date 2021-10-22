@@ -10,6 +10,7 @@
 #include "unrolled_loop.hpp"
 #include "../db_utils/Tuple.hpp"
 
+using namespace sycl;
 using namespace std::chrono;
 
 namespace fpga_utils = sycl_toolkit::oneapi::fpga;

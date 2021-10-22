@@ -18,8 +18,6 @@
 #include "pipe_utils.hpp" // Included from DirectProgramming/DPC++FPGA/include/
 #include "impu_math.hpp"
 
-using namespace sycl;
-
 ///////////////////////////////////////////////////////////////
 // Convenient default comparators
 struct LessThan {
@@ -71,7 +69,7 @@ class InternalMergeTreePipeID;
 //
 template <typename ValueT, typename IndexT, typename InPipe, typename OutPipe,
           unsigned char k_width, size_t units, typename Compare>
-std::vector<event> SubmitMergeSort(queue& q, size_t count, ValueT* buf_0,
+std::vector<sycl::event> SubmitMergeSort(sycl::queue& q, size_t count, ValueT* buf_0,
                                    ValueT* buf_1, Compare comp) {
   namespace fpga_tools = sycl_toolkit::oneapi::fpga;
 
@@ -183,9 +181,9 @@ std::vector<event> SubmitMergeSort(queue& q, size_t count, ValueT* buf_0,
     impu::math::Log2(count_per_unit) - impu::math::Log2(k_width);
 
   // store the various merge unit and merge tree kernel events
-  std::array<std::vector<event>, units> produce_a_events, produce_b_events,
+  std::array<std::vector<sycl::event>, units> produce_a_events, produce_b_events,
       merge_events, consume_events;
-  std::array<std::vector<event>, kReductionLevels> mt_merge_events;
+  std::array<std::vector<sycl::event>, kReductionLevels> mt_merge_events;
   for (size_t i = 0; i < units; i++) {
     produce_a_events[i].resize(iterations);
     produce_b_events[i].resize(iterations);
@@ -227,7 +225,7 @@ std::vector<event> SubmitMergeSort(queue& q, size_t count, ValueT* buf_0,
                              typename InternalOutPipes::template PipeAt<u>>;
 
       // build the dependency event vector
-      std::vector<event> wait_events;
+      std::vector<sycl::event> wait_events;
       if (i == 0) {
         // on the first iteration, wait for sorting network kernel to be done so
         // that all of the data is in the temp buffers in device memory
@@ -356,7 +354,7 @@ std::vector<event> SubmitMergeSort(queue& q, size_t count, ValueT* buf_0,
 
   ////////////////////////////////////////////////////////////////////////////
   // Combine all kernel events into a single return vector
-  std::vector<event> ret;
+  std::vector<sycl::event> ret;
 
   // add event from the sorting network stage
   ret.push_back(sort_network_event);
@@ -387,7 +385,7 @@ std::vector<event> SubmitMergeSort(queue& q, size_t count, ValueT* buf_0,
 //
 template <typename ValueT, typename IndexT, typename InPipe, typename OutPipe,
           unsigned char k_width, size_t units>
-std::vector<event> SubmitMergeSort(queue& q, IndexT count, ValueT* buf_0,
+std::vector<sycl::event> SubmitMergeSort(sycl::queue& q, IndexT count, ValueT* buf_0,
                                    ValueT* buf_1) {
   return SubmitMergeSort<ValueT, IndexT, InPipe, OutPipe, k_width, units>(
       q, count, buf_0, buf_1, LessThan());

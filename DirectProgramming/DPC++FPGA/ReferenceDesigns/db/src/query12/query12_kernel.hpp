@@ -7,9 +7,7 @@
 
 #include "../dbdata.hpp"
 
-using namespace sycl;
-
-bool SubmitQuery12(queue& q, Database& dbinfo,
+bool SubmitQuery12(sycl::queue& q, Database& dbinfo,
                    DBDate low_date, DBDate high_date,
                    int shipmode1, int shipmode2,
                    std::array<DBDecimal, 2>& high_line_count,

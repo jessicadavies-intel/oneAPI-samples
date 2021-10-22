@@ -7,6 +7,7 @@
 // Included from DirectProgramming/DPC++FPGA/include
 #include "unrolled_loop.hpp"
 
+using namespace sycl;
 using namespace std::chrono;
 
 namespace fpga_utils = sycl_toolkit::oneapi::fpga;
