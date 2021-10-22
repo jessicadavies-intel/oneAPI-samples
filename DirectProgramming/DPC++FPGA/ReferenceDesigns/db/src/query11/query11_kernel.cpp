@@ -15,6 +15,8 @@
 
 using namespace std::chrono;
 
+namespace fpga_utils = sycl_toolkit::oneapi::fpga;
+
 // kernel class names
 class ProducePartSupplier;
 class JoinPartSupplierParts;
@@ -96,7 +98,7 @@ bool SubmitQuery11(queue& q, Database& dbinfo, std::string& nation,
         // bulk read of data from global memory
         NTuple<kJoinWinSize, PartSupplierRow> data;
 
-        UnrolledLoop<kJoinWinSize>([&](auto j) {
+        fpga_tools::UnrolledLoop<kJoinWinSize>([&](auto j) {
           size_t idx = i * kJoinWinSize + j;
           bool in_range = idx < ps_rows;
 
@@ -181,7 +183,7 @@ bool SubmitQuery11(queue& q, Database& dbinfo, std::string& nation,
         done = pipe_data.done;
 
         if (pipe_data.valid) {
-          UnrolledLoop<kJoinWinSize>([&](auto j) {
+          fpga_tools::UnrolledLoop<kJoinWinSize>([&](auto j) {
             SupplierPartSupplierJoined data = pipe_data.data.template get<j>();
 
             if (data.valid && data.nationkey == nationkey) {

@@ -64,6 +64,8 @@ event SubmitBackwardSubstitutionKernel(queue& q) {
 
   auto e = q.submit([&](handler& h) {
     h.single_task<BackwardSubstitutionKernelName>([=] {
+      namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+
       while (1) {
         CalcType u_matrix[k_vector_size][kNumCalcTypePerVector];
         float u_diag_recip_vector[k_vector_size];
@@ -136,7 +138,7 @@ event SubmitBackwardSubstitutionKernel(queue& q) {
               CalcType u_val, y_val, y_initial_val, y_current, y_new;
               short row[k_unroll_factor];
 
-              UnrolledLoop<k_unroll_factor>([&](auto j) {
+              fpga_tools::UnrolledLoop<k_unroll_factor>([&](auto j) {
                 // calculate current location within the vector
                 row[j] = j + (i * (short)k_unroll_factor);
 

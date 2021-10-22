@@ -85,6 +85,8 @@ event SubmitStreamingQRDKernel(queue& q) {
 
   auto e = q.submit([&](handler& h) {
     h.single_task<StreamingQRDKernelName>([=] {
+      namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+
       // Constants used to implement the triagular loop structure of the design.
       // See the tutorial on triangular loop optimization for more details.
 
@@ -159,8 +161,8 @@ event SubmitStreamingQRDKernel(queue& q) {
           PipeType data_in = AMatrixInPipe::read();
           short col = i % (short)k_a_num_cols;
           short write_row_group = i / (short)k_a_num_cols;
-          UnrolledLoop<k_a_num_rows / k_pipe_width>([&](auto row_group) {
-            UnrolledLoop<k_pipe_width>([&](auto element) {
+          fpga_tools::UnrolledLoop<k_a_num_rows / k_pipe_width>([&](auto row_group) {
+            fpga_tools::UnrolledLoop<k_pipe_width>([&](auto element) {
               constexpr short row = row_group * k_pipe_width + element;
               if (write_row_group == row_group) {
                 a_matrix_in[col].template get<row>() =
@@ -209,7 +211,7 @@ event SubmitStreamingQRDKernel(queue& q) {
           bool i_lt_0[kNumBanks];
           ComplexType sori[kNumBanks];
 
-          UnrolledLoop<kNumBanks>([&](auto k) {
+          fpga_tools::UnrolledLoop<kNumBanks>([&](auto k) {
             j_eq_i[k] = ext::intel::fpga_reg(j == i);
             i_gt_0[k] = ext::intel::fpga_reg(i > 0);
             i_ge_0_j_ge_i[k] = ext::intel::fpga_reg(i >= 0 && j >= i);
@@ -221,7 +223,7 @@ event SubmitStreamingQRDKernel(queue& q) {
           // fetch data from a_matrix_in or a_matrix, based on value of i
           // Use of fpga_reg here is a workaround to prevent the compiler from
           // inferring some very complicated arbitrated local memory systems.
-          UnrolledLoop<k_a_num_rows>([&](auto row) {
+          fpga_tools::UnrolledLoop<k_a_num_rows>([&](auto row) {
             // load vector_t from a_matrix_in
             vector_t.template get<row>() =
                 ext::intel::fpga_reg(a_matrix_in[j_nonneg].template get<row>());
@@ -240,7 +242,7 @@ event SubmitStreamingQRDKernel(queue& q) {
 
           // perform calculations on the current column of data, and store
           // the result back to a_matrix (and q_matrix).
-          UnrolledLoop<k_a_num_rows>([&](auto row) {
+          fpga_tools::UnrolledLoop<k_a_num_rows>([&](auto row) {
             // calculate the new vector_t
             ComplexType sori_or_0 = i_lt_0[row / kNumElementsPerBank]
                                         ? 0
@@ -267,7 +269,7 @@ event SubmitStreamingQRDKernel(queue& q) {
           });
 
           ComplexType p_ij = 0;
-          UnrolledLoop<k_a_num_rows>([&](auto row) {
+          fpga_tools::UnrolledLoop<k_a_num_rows>([&](auto row) {
             p_ij += vector_t.template get<row>() *
                     vector_ti.template get<row>().conj();
           });

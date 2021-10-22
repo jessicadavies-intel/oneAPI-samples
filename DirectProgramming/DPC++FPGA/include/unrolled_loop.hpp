@@ -103,7 +103,7 @@ using integer_range = typename integer_range_impl<T,
     (begin < end)>::type;
 
 /*
- detail::make_integer_range and detail::make_index_range are akin to
+ make_integer_range and make_index_range are akin to
  std::make_integer_sequence and std::make_index_sequence, respectively.
  However they represent a range, rather than an arbitrary sequence. The
  range can either be increasing or decreasing.
@@ -128,6 +128,10 @@ template <std::size_t begin, std::size_t end>
 using make_index_range = integer_range<std::size_t, begin, end>;
 
 } // namespace
+
+namespace sycl_toolkit {
+namespace oneapi {
+namespace fpga {
 
 //
 // Base implementation
@@ -182,5 +186,9 @@ template <std::size_t start, std::size_t end, class F>
 constexpr void UnrolledLoop(F&& f) {
   UnrolledLoop(make_index_range<start, end>{}, std::forward<F>(f));
 }
+
+} // namespace fpga
+} // namespace oneapi
+} // namespace sycl_toolkit
 
 #endif /* __UNROLLED_LOOP_HPP__ */

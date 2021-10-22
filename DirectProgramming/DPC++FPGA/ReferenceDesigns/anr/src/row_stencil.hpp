@@ -70,6 +70,8 @@ template <typename InType, typename OutType, typename IndexT, typename InPipe,
           typename StencilFunction, typename... FunctionArgTypes>
 void RowStencil(IndexT rows, IndexT cols, const InType zero_val,
                 StencilFunction func, FunctionArgTypes... stencil_args) {
+  namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+
   // types coming into and out of the kernel from pipes, respectively
   using InPipeT = DataBundle<InType, parallel_cols>;
   using OutPipeT = DataBundle<OutType, parallel_cols>;
@@ -122,12 +124,12 @@ void RowStencil(IndexT rows, IndexT cols, const InType zero_val,
 
       // Perform the convolution on the 1D window
       OutPipeT out_data(OutType(0));
-      UnrolledLoop<0, parallel_cols>([&](auto stencil_idx) {
+      fpga_tools::UnrolledLoop<parallel_cols>([&](auto stencil_idx) {
         const int col_local = col + stencil_idx;
         ShiftReg<InType, filter_size> shifty_pixels_copy;
 
         // first, make an offsetted copy of the shift register
-        UnrolledLoop<0, filter_size>([&](auto x) {
+        fpga_tools::UnrolledLoop<filter_size>([&](auto x) {
           shifty_pixels_copy[x] = shifty_pixels[x + stencil_idx];
         });
 

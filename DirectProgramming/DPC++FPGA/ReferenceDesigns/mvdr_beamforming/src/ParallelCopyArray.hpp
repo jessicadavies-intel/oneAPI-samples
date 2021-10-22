@@ -13,17 +13,18 @@ template <typename T,         // type of elements in the array
           std::size_t k_size  // number of T elements in the array
           >
 struct ParallelCopyArray {
+
   // constructor
   ParallelCopyArray() {}
 
   // copy constructor - do a parallel copy
   ParallelCopyArray(const ParallelCopyArray& source) {
-    UnrolledLoop<k_size>([&](auto k) { data[k] = source[k]; });
+    sycl_toolkit::oneapi::fpga::UnrolledLoop<k_size>([&](auto k) { data[k] = source[k]; });
   }
 
   // assignment operator - do a parallel copy
   ParallelCopyArray& operator=(const ParallelCopyArray& source) {
-    UnrolledLoop<k_size>([&](auto k) { data[k] = source[k]; });
+    sycl_toolkit::oneapi::fpga::UnrolledLoop<k_size>([&](auto k) { data[k] = source[k]; });
     return *this;
   }
 

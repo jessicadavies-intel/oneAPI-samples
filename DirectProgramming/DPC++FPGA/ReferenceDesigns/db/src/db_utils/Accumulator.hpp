@@ -9,6 +9,8 @@
 // Included from DirectProgramming/DPC++FPGA/include
 #include "unrolled_loop.hpp"
 
+namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+ 
 ///////////////////////////////////////////////////////
 //
 // Register-based accumulator
@@ -27,14 +29,14 @@ class RegisterAccumulator {
  public:
   // initialize the memory to 0
   void Init() {
-    UnrolledLoop<size>([&](auto i) { 
+    fpga_tools::UnrolledLoop<size>([&](auto i) { 
       registers.template get<i>() = 0;
     });
   }
 
   // accumulate 'value' into register 'index' (i.e. registers[index] += value)
   void Accumulate(IndexType index, StorageType value) {
-    UnrolledLoop<size>([&](auto i) {
+    fpga_tools::UnrolledLoop<size>([&](auto i) {
       registers.template get<i>() += (i == index) ? value : 0;
     });
   }
@@ -49,7 +51,7 @@ class RegisterAccumulator {
   // get the value of memory at 'index'
   StorageType Get(IndexType index) {
     StorageType ret;
-    UnrolledLoop<size>([&](auto i) {
+    fpga_tools::UnrolledLoop<size>([&](auto i) {
       if (i == index) {
         ret = registers.template get<i>();
       }

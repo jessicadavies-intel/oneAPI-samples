@@ -62,6 +62,7 @@ template <typename T, size_t k_num_cols_in, size_t k_pipe_width,
           typename MatrixInPipe, typename MatrixOutPipe>
 struct Transposer {
   void operator()() const {
+    namespace fpga_tools = sycl_toolkit::oneapi::fpga;
     using PipeType = NTuple<T, k_pipe_width>;
 
     // This is a scratch pad memory that we will use to do the transpose.
@@ -96,7 +97,7 @@ struct Transposer {
     // create a 'pipeline' for the almost full signal
     constexpr int kAlmostFullPipeDepth = 2;
     NTuple<bool, kAlmostFullPipeDepth> almost_full_pipeline;
-    UnrolledLoop<kAlmostFullPipeDepth>([&](auto pipe_stage) {
+    fpga_tools::UnrolledLoop<kAlmostFullPipeDepth>([&](auto pipe_stage) {
       almost_full_pipeline.template get<pipe_stage>() = false;
     });
 
@@ -117,7 +118,7 @@ struct Transposer {
       // an 'almost' full signal, we don't need the result right away, we
       // can wait several loop iterations.  This allows us to break
       // dependencies between loop iterations and improve FMAX.
-      UnrolledLoop<kAlmostFullPipeDepth - 1>([&](auto pipe_stage) {
+      fpga_tools::UnrolledLoop<kAlmostFullPipeDepth - 1>([&](auto pipe_stage) {
         almost_full_pipeline.template get<pipe_stage>() =
             almost_full_pipeline.template get<pipe_stage + 1>();
       });
@@ -131,7 +132,7 @@ struct Transposer {
 
       // read the next data to send
       PipeType data_out;
-      UnrolledLoop<k_pipe_width>([&](auto i) {
+      fpga_tools::UnrolledLoop<k_pipe_width>([&](auto i) {
         data_out.template get<i>() = scratch[cur_tx_buffer][i*k_num_cols_in+cur_tx_col];
       });
 
@@ -166,7 +167,7 @@ struct Transposer {
 
       // if we have new data, store it in the buffer and update the status
       if (read_valid) {
-        UnrolledLoop<k_pipe_width>([&](auto i) {
+        fpga_tools::UnrolledLoop<k_pipe_width>([&](auto i) {
           scratch[cur_rx_buffer][cur_rx_count*(unsigned short)k_pipe_width + i] = data_in.template get<i>();
         });
 

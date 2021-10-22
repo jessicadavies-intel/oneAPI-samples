@@ -10,6 +10,8 @@
 // Included from DirectProgramming/DPC++FPGA/include
 #include "unrolled_loop.hpp"
 
+namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+
 /*
 The sort() function in this header implements a local-memory-based FIFO-Based
 Merge Sorter, which has been based on the architecture shown in Figure 8c) of
@@ -132,7 +134,7 @@ struct stage_unroller {
 
 template <typename T_arr, int size>
 static void ShiftLeft(T_arr (&Array)[size]) {
-  UnrolledLoop<size - 1>([&](auto j) { Array[j] = Array[j + 1]; });
+  fpga_tools::UnrolledLoop<size - 1>([&](auto j) { Array[j] = Array[j + 1]; });
 }
 
 //============================= FIFO Definition ==============================//

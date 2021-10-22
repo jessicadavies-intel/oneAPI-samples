@@ -76,6 +76,8 @@ event SubmitBeamformerKernel(
 
   auto e = q.submit([&](handler& h) {
     h.single_task<BeamformerKernelName>([=] {
+      namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+
       while (1) {
         CalcType weight_vectors[k_num_weight_vectors][kNumCalcTypePerVector];
 
@@ -106,7 +108,7 @@ event SubmitBeamformerKernel(
                i++) {
             segment = XrxVectorsInPipe::read();
             short index = i / kReadsPerCalcType;
-            UnrolledLoop<k_num_complex_per_xrx_read>([&](auto k) {
+            fpga_tools::UnrolledLoop<k_num_complex_per_xrx_read>([&](auto k) {
               short subindex =
                   (i % kReadsPerCalcType) * (short)k_num_complex_per_xrx_read +
                   k;
@@ -126,19 +128,19 @@ event SubmitBeamformerKernel(
           for (unsigned char vector_num = 0;
                vector_num < (unsigned char)k_num_weight_vectors; vector_num++) {
             // zero the accumulators
-            UnrolledLoop<k_unroll_factor>([&](auto i) { accum_vector[i] = 0; });
+            fpga_tools::UnrolledLoop<k_unroll_factor>([&](auto i) { accum_vector[i] = 0; });
 
             // calculate the sum of products of the weight and xrx vectors
             // unroll by a factor of k_unroll_factor (so perform k_unroll_factor
             // operations in parallel)
             for (short i = 0; i < (kNumCalcTypePerVector); i++) {
-              UnrolledLoop<k_unroll_factor>([&](auto j) {
+              fpga_tools::UnrolledLoop<k_unroll_factor>([&](auto j) {
                 accum_vector[j] +=
                     xrx_vector[i][j] * weight_vectors[vector_num][i][j].conj();
               });
             }
             ComplexType accum_vector_sum = 0;
-            UnrolledLoop<k_unroll_factor>(
+            fpga_tools::UnrolledLoop<k_unroll_factor>(
                 [&](auto i) { accum_vector_sum += accum_vector[i]; });
 
             result[vector_num] = accum_vector_sum;

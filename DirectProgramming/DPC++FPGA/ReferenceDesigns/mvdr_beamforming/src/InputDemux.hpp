@@ -58,6 +58,8 @@ event SubmitInputDemuxKernel(
 
   auto e = q.submit([&](handler& h) {
     h.single_task<InputDemuxKernelName>([=] {
+      namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+
       constexpr int kReadsPerTrainingMatrix = k_training_size / k_pipe_width;
       constexpr int kMaxReadsPerXrxDataMatrix =
           k_max_xrx_data_size / k_pipe_width;
@@ -80,7 +82,7 @@ event SubmitInputDemuxKernel(
       // create a 'pipeline' for the almost full signal
       constexpr int kAlmostFullPipeDepth = 2;
       NTuple<bool, kAlmostFullPipeDepth> almost_full_pipeline;
-      UnrolledLoop<kAlmostFullPipeDepth>([&](auto pipe_stage) {
+      fpga_tools::UnrolledLoop<kAlmostFullPipeDepth>([&](auto pipe_stage) {
         almost_full_pipeline.template get<pipe_stage>() = false;
       });
 
@@ -124,7 +126,7 @@ event SubmitInputDemuxKernel(
         // an 'almost' full signal, we don't need the result right away, we
         // can wait several loop iterations.  This allows us to break
         // dependencies between loop iterations and improve FMAX.
-        UnrolledLoop<kAlmostFullPipeDepth - 1>([&](auto pipe_stage) {
+        fpga_tools::UnrolledLoop<kAlmostFullPipeDepth - 1>([&](auto pipe_stage) {
           almost_full_pipeline.template get<pipe_stage>() =
               almost_full_pipeline.template get<pipe_stage + 1>();
         });

@@ -73,6 +73,8 @@ template <typename ValueT, typename IndexT, typename InPipe, typename OutPipe,
           unsigned char k_width, size_t units, typename Compare>
 std::vector<event> SubmitMergeSort(queue& q, size_t count, ValueT* buf_0,
                                    ValueT* buf_1, Compare comp) {
+  namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+
   // sanity check the number of merge units and the width of the sorter
   static_assert(units >= 1);
   static_assert(impu::math::IsPow2(units));
@@ -212,7 +214,7 @@ std::vector<event> SubmitMergeSort(queue& q, size_t count, ValueT* buf_0,
 
     // launch the merge unit kernels for this iteration of the sort using
     // a front-end meta-programming unroller
-    UnrolledLoop<units>([&](auto u) {
+    fpga_tools::UnrolledLoop<units>([&](auto u) {
       // the intra merge unit pipes
       using APipe = typename APipes::template PipeAt<u>;
       using BPipe = typename BPipes::template PipeAt<u>;
@@ -294,14 +296,14 @@ std::vector<event> SubmitMergeSort(queue& q, size_t count, ValueT* buf_0,
   // of each merge unit into a single sorted output. The output of the last
   // level of the merge tree will stream out of 'OutPipe'.
   // NOTE: if units==1, then there is no merge tree!
-  UnrolledLoop<kReductionLevels>([&](auto level) {
+  fpga_tools::UnrolledLoop<kReductionLevels>([&](auto level) {
     // each level of the merge tree reduces the number of sorted partitions
     // by a factor of 2.
     // level 0 has 'units' merge kernels, level 1 has 'units/2', and so on...
     // See README.md for a good illustration.
     constexpr size_t kLevelMergeUnits = units / ((1 << level) * 2);
 
-    UnrolledLoop<kLevelMergeUnits>([&](auto merge_unit) {
+    fpga_tools::UnrolledLoop<kLevelMergeUnits>([&](auto merge_unit) {
       // When level == 0, we know we will use 'MTAPipeFromMergeUnit' and
       // 'MTBPipeFromMergeUnit' below. However, we cannot access
       // PipeAt<-1, ...> without a compiler error. So, we will set the previous

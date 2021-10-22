@@ -16,6 +16,8 @@
 
 using namespace sycl;
 
+namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+
 //
 // Joins two tables into a single table
 // Assumptions:
@@ -106,16 +108,16 @@ void MergeJoin() {
       StreamingData<JoinType, t2_win_size> join_data(false, true);
 
       // initialize all outputs to false
-      UnrolledLoop<t2_win_size>([&](auto i) {
+      fpga_tools::UnrolledLoop<t2_win_size>([&](auto i) {
         join_data.data.template get<i>().valid = false;
       });
 
       // crossbar join
-      UnrolledLoop<t2_win_size>([&](auto i) {
+      fpga_tools::UnrolledLoop<t2_win_size>([&](auto i) {
         const bool t2_data_valid = t2_win.data.template get<i>().valid;
         const auto t2_key = t2_win.data.template get<i>().PrimaryKey();
 
-        UnrolledLoop<t1_win_size>([&](auto j) {
+        fpga_tools::UnrolledLoop<t1_win_size>([&](auto j) {
           const bool t1_data_valid = t1_win.data.template get<j>().valid;
           const auto t1_key = t1_win.data.template get<j>().PrimaryKey();
 
@@ -241,16 +243,16 @@ void DuplicateMergeJoin() {
                                                                          true);
 
       // initialize all validity to false
-      UnrolledLoop<t1_max_duplicates * t2_win_size>([&](auto i) {
+      fpga_tools::UnrolledLoop<t1_max_duplicates * t2_win_size>([&](auto i) {
         join_data.data.template get<i>().valid = false;
       });
 
       // full crossbar join producing up to t1_max_duplicates*t2_win_size
-      UnrolledLoop<t1_max_duplicates>([&](auto i) {
+      fpga_tools::UnrolledLoop<t1_max_duplicates>([&](auto i) {
         const bool t1_data_valid = t1_win.data.template get<i>().valid;
         const unsigned int t1_key = t1_win.data.template get<i>().PrimaryKey();
 
-        UnrolledLoop<t2_win_size>([&](auto j) {
+        fpga_tools::UnrolledLoop<t2_win_size>([&](auto j) {
           const bool t2_data_valid = t2_win.data.template get<j>().valid;
           const unsigned int t2_key =
               t2_win.data.template get<j>().PrimaryKey();

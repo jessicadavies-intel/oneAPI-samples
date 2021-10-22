@@ -9,6 +9,8 @@
 
 using namespace std::chrono;
 
+namespace fpga_utils = sycl_toolkit::oneapi::fpga;
+
 // how many elements to compute per cycle
 constexpr int kElementsPerCycle = 12;
 
@@ -104,7 +106,7 @@ bool SubmitQuery1(queue& q, Database& dbinfo, DBDate low_date,
         bool row_valid[kElementsPerCycle];
 
         // multiple elements per cycle
-        UnrolledLoop<kElementsPerCycle>([&](auto p) {
+        fpga_tools::UnrolledLoop<kElementsPerCycle>([&](auto p) {
           // is data in range of the table
           // (data size may not be divisible by kElementsPerCycle)
           size_t idx = r * kElementsPerCycle + p;
@@ -149,7 +151,7 @@ bool SubmitQuery1(queue& q, Database& dbinfo, DBDate low_date,
         });
 
         // reduction accumulation
-        UnrolledLoop<kElementsPerCycle>([&](auto p) {
+        fpga_tools::UnrolledLoop<kElementsPerCycle>([&](auto p) {
           sum_qty_local.Accumulate(out_idx[p],
                                    row_valid[p] ? qty[p] : 0);
           sum_base_price_local.Accumulate(out_idx[p],

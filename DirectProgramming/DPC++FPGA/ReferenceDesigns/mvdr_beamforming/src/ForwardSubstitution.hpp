@@ -70,6 +70,8 @@ event SubmitForwardSubstitutionKernel(queue& q) {
 
   auto e = q.submit([&](handler& h) {
     h.single_task<ForwardSubstitutionKernelName>([=] {
+      namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+
       // do not proceed until the first set of y vectors are available
       // Data in this pipe is always true, so we know update_y_vectors will be
       // set to true here.  Doing this assignment creates a memory dependency
@@ -155,7 +157,7 @@ event SubmitForwardSubstitutionKernel(queue& q) {
           for (short i = 0; i < kNumCalcTypePerVector; i++) {
             CalcType y_elements;
 
-            UnrolledLoop<k_unroll_factor>([&](auto j) {
+            fpga_tools::UnrolledLoop<k_unroll_factor>([&](auto j) {
               y_elements[j] = y_vectors[vector_num][i][j];
               y_vector_initial[i][j] = y_elements[j];
               if (i == 0 && j == 0) {
@@ -187,7 +189,7 @@ event SubmitForwardSubstitutionKernel(queue& q) {
               CalcType l_val, y_val, y_initial_val, y_current, y_new;
               short row[k_unroll_factor];
 
-              UnrolledLoop<k_unroll_factor>([&](auto j) {
+              fpga_tools::UnrolledLoop<k_unroll_factor>([&](auto j) {
                 // calculate current location within the vector
                 row[j] = j + (i * (short)k_unroll_factor);
 

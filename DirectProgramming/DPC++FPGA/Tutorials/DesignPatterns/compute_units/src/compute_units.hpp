@@ -15,7 +15,7 @@ template <std::size_t N,                           // Number of compute units
 // will be called with various indices (i.e., the ID for each compute unit)
 constexpr void SubmitComputeUnits(sycl::queue &q, Func &&f) {
 
-  UnrolledLoop<N>([&](auto i) {
+  sycl_toolkit::oneapi::fpga::UnrolledLoop<N>([&](auto i) {
     q.single_task<Name<i>>([=] {
       static_assert(
           std::is_invocable_v<Func, std::integral_constant<std::size_t, i>>,

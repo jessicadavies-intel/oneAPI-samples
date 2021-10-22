@@ -14,6 +14,8 @@
 #include "StreamingData.hpp"
 #include "ShannonIterator.hpp"
 
+namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+
 //
 // ArrayMap class
 //
@@ -80,12 +82,12 @@ void MapJoin(MapType& map) {
       StreamingData<JoinType, t2_win_size> join_data(false, true);
 
       // initialize all outputs to false
-      UnrolledLoop<t2_win_size>([&](auto i) { 
+      fpga_tools::UnrolledLoop<t2_win_size>([&](auto i) { 
         join_data.data.template get<i>().valid = false;
       });
 
       // check for match in the map and join if valid
-      UnrolledLoop<t2_win_size>([&](auto j) {
+      fpga_tools::UnrolledLoop<t2_win_size>([&](auto j) {
         const bool t2_win_valid = in_data.data.template get<j>().valid;
         const unsigned int t2_key =
             in_data.data.template get<j>().PrimaryKey();

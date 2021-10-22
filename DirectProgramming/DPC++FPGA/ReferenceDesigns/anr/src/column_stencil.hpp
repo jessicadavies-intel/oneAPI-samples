@@ -66,6 +66,8 @@ template <typename InType, typename OutType, typename IndexT, typename InPipe,
           typename... FunctionArgTypes>
 void ColumnStencil(IndexT rows, IndexT cols, const InType zero_val,
                    StencilFunction func, FunctionArgTypes... stencil_args) {
+  namespace fpga_tools = sycl_toolkit::oneapi::fpga;
+
   // types coming into and out of the kernel from pipes, respectively
   using InPipeT = DataBundle<InType, parallel_cols>;
   using OutPipeT = DataBundle<OutType, parallel_cols>;
@@ -150,7 +152,7 @@ void ColumnStencil(IndexT rows, IndexT cols, const InType zero_val,
       // │   ◄─  ◄─  ◄─────────────────Input
       // └───┴───┴───┘
 
-      UnrolledLoop<0, filter_size>([&](auto stencil_row) {
+      fpga_tools::UnrolledLoop<filter_size>([&](auto stencil_row) {
         if constexpr (stencil_row != (filter_size - 1)) {
           pixel_column[stencil_row] = line_buffer_FIFO[fifo_idx][stencil_row];
         } else {
@@ -169,7 +171,7 @@ void ColumnStencil(IndexT rows, IndexT cols, const InType zero_val,
       //      └─────────────┘   │
       //                        └─Input
 
-      UnrolledLoop<0, (filter_size - 1)>([&](auto fifo_row) {
+      fpga_tools::UnrolledLoop<(filter_size - 1)>([&](auto fifo_row) {
         if constexpr (fifo_row != (filter_size - 2)) {
           line_buffer_FIFO[fifo_idx][fifo_row] = pixel_column[fifo_row + 1];
         } else {
@@ -179,12 +181,12 @@ void ColumnStencil(IndexT rows, IndexT cols, const InType zero_val,
 
       // Perform the convolution on the 1D window
       OutPipeT out_data((OutType)0);
-      UnrolledLoop<0, parallel_cols>([&](auto stencil_idx) {
+      fpga_tools::UnrolledLoop<parallel_cols>([&](auto stencil_idx) {
         ShiftReg<InType, kShiftRegRows> shifty_copy;
 
         int col_local = col + stencil_idx;
 
-        UnrolledLoop<0, filter_size>([&](auto stencil_row) {
+        fpga_tools::UnrolledLoop<filter_size>([&](auto stencil_row) {
           shifty_copy[stencil_row] = shifty_2d[stencil_row][stencil_idx];
         });
 
