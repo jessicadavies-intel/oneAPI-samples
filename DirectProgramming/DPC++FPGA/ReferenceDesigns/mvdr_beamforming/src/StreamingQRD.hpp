@@ -85,7 +85,6 @@ event SubmitStreamingQRDKernel(queue& q) {
 
   auto e = q.submit([&](handler& h) {
     h.single_task<StreamingQRDKernelName>([=] {
-      namespace fpga_tools = sycl_toolkit::oneapi::fpga;
 
       // Constants used to implement the triagular loop structure of the design.
       // See the tutorial on triangular loop optimization for more details.

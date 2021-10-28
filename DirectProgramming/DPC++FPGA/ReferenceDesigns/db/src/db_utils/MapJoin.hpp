@@ -14,8 +14,6 @@
 #include "StreamingData.hpp"
 #include "ShannonIterator.hpp"
 
-namespace fpga_tools = sycl_toolkit::oneapi::fpga;
-
 //
 // ArrayMap class
 //

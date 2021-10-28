@@ -145,29 +145,27 @@ template <
 
     // copies of internal pipes, useful for debugging or other processing
     // all default to 'null' pipes that go nowhere
-    typename TrainingDataPipeOut = sycl_toolkit::oneapi::fpga::PipeDuplicator<
+    typename TrainingDataPipeOut = fpga_tools::PipeDuplicator<
         MVDRNullPipeID, NTuple<ComplexType, k_num_complex_per_xrx_read>>,
-    typename XrxDataPipeOut = sycl_toolkit::oneapi::fpga::PipeDuplicator<
+    typename XrxDataPipeOut = fpga_tools::PipeDuplicator<
         MVDRNullPipeID, NTuple<ComplexType, k_num_complex_per_xrx_read>>,
     typename SteeringVectorsPipeOut =
-        sycl_toolkit::oneapi::fpga::PipeDuplicator<MVDRNullPipeID, ComplexType>,
+        fpga_tools::PipeDuplicator<MVDRNullPipeID, ComplexType>,
     typename ForwardSteeringVectorsPipeOut =
-        sycl_toolkit::oneapi::fpga::PipeDuplicator<MVDRNullPipeID, ComplexType>,
-    typename RMatrixPipeOut = sycl_toolkit::oneapi::fpga::PipeDuplicator<MVDRNullPipeID, ComplexType>,
-    typename RDiagRecipVectorPipeOut = sycl_toolkit::oneapi::fpga::PipeDuplicator<MVDRNullPipeID, float>,
+        fpga_tools::PipeDuplicator<MVDRNullPipeID, ComplexType>,
+    typename RMatrixPipeOut = fpga_tools::PipeDuplicator<MVDRNullPipeID, ComplexType>,
+    typename RDiagRecipVectorPipeOut = fpga_tools::PipeDuplicator<MVDRNullPipeID, float>,
     typename ForwardSubstitutionResultPipeOut =
-        sycl_toolkit::oneapi::fpga::PipeDuplicator<MVDRNullPipeID, ComplexType>,
-    typename YVectorsPipeOut = sycl_toolkit::oneapi::fpga::PipeDuplicator<MVDRNullPipeID, ComplexType>,
-    typename WeightVectorsPipeOut = sycl_toolkit::oneapi::fpga::PipeDuplicator<MVDRNullPipeID, ComplexType>,
-    typename TransposedTrainingDataPipeOut = sycl_toolkit::oneapi::fpga::PipeDuplicator<
+        fpga_tools::PipeDuplicator<MVDRNullPipeID, ComplexType>,
+    typename YVectorsPipeOut = fpga_tools::PipeDuplicator<MVDRNullPipeID, ComplexType>,
+    typename WeightVectorsPipeOut = fpga_tools::PipeDuplicator<MVDRNullPipeID, ComplexType>,
+    typename TransposedTrainingDataPipeOut = fpga_tools::PipeDuplicator<
         MVDRNullPipeID, NTuple<ComplexType, k_num_complex_per_xrx_read>>>
 MVDREventArray SubmitMVDRKernels(
     sycl::queue& q,
     short num_xrx_per_weights  // Number of xrx vectors to process with
                                // each set of Weight vectors.
 ) {
-  namespace fpga_tools = sycl_toolkit::oneapi::fpga;
-
   constexpr size_t kNumTrainingRows = k_num_sensor_inputs * k_rmb_factor;
   constexpr size_t kTrainingMatrixSize = kNumTrainingRows * k_num_sensor_inputs;
 

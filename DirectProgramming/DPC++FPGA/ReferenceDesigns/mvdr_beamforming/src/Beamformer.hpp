@@ -76,7 +76,6 @@ event SubmitBeamformerKernel(
 
   auto e = q.submit([&](handler& h) {
     h.single_task<BeamformerKernelName>([=] {
-      namespace fpga_tools = sycl_toolkit::oneapi::fpga;
 
       while (1) {
         CalcType weight_vectors[k_num_weight_vectors][kNumCalcTypePerVector];

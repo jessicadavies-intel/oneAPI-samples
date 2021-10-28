@@ -18,8 +18,6 @@
 
 using namespace sycl;
 
-namespace fpga_tools = sycl_toolkit::oneapi::fpga;
-
 constexpr size_t kNumRows = 2;
 constexpr size_t kNumCols = 2;
 constexpr size_t kNumberOfConsumers = kNumRows * kNumCols;

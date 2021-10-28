@@ -10,8 +10,6 @@
 using namespace sycl;
 using namespace std::chrono;
 
-namespace fpga_utils = sycl_toolkit::oneapi::fpga;
-
 // how many elements to compute per cycle
 constexpr int kElementsPerCycle = 12;
 

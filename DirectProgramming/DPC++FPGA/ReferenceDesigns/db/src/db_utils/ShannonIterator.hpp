@@ -9,8 +9,6 @@
 // Included from DirectProgramming/DPC++FPGA/include
 #include "unrolled_loop.hpp"
 
-namespace fpga_tools = sycl_toolkit::oneapi::fpga;
-
 //
 // This class is intended to improve iterator performance for the FPGA.
 // It optimizes the critical by precomputing the iterator change and comparison

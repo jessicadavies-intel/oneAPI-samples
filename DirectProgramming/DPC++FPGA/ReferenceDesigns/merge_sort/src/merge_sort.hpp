@@ -71,8 +71,6 @@ template <typename ValueT, typename IndexT, typename InPipe, typename OutPipe,
           unsigned char k_width, size_t units, typename Compare>
 std::vector<sycl::event> SubmitMergeSort(sycl::queue& q, size_t count, ValueT* buf_0,
                                    ValueT* buf_1, Compare comp) {
-  namespace fpga_tools = sycl_toolkit::oneapi::fpga;
-
   // sanity check the number of merge units and the width of the sorter
   static_assert(units >= 1);
   static_assert(impu::math::IsPow2(units));

@@ -9,8 +9,6 @@
 // Included from DirectProgramming/DPC++FPGA/include
 #include "unrolled_loop.hpp"
 
-namespace fpga_tools = sycl_toolkit::oneapi::fpga;
- 
 ///////////////////////////////////////////////////////
 //
 // Register-based accumulator

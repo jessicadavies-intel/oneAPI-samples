@@ -69,6 +69,8 @@ designs.
 
 */
 
+namespace fpga_tools {
+
 // =============================================================
 // Internal Helper Functions/Structs
 // =============================================================
@@ -121,11 +123,8 @@ struct write_currying<WriteFunc, BaseTy, std::index_sequence<I...>> {
   }
 };
 
-}  // namespace
+}  // namespace detail
 
-namespace sycl_toolkit {
-namespace oneapi {
-namespace fpga {
 // =============================================================
 // PipeArray
 // =============================================================
@@ -148,7 +147,7 @@ struct PipeArray {
     static_assert(sizeof...(idxs) == sizeof...(dims),
                   "Indexing into a PipeArray requires as many indices as "
                   "dimensions of the PipeArray.");
-    static_assert(::detail::VerifierDimLayer<dims...>::template VerifierIdxLayer<
+    static_assert(detail::VerifierDimLayer<dims...>::template VerifierIdxLayer<
                       idxs...>::IsValid(),
                   "Index out of bounds");
     using VerifiedPipe =
@@ -268,8 +267,6 @@ struct PipeDuplicator<Id, T> {
   }
 };
 
-} // namespace fpga
-} // namespace oneapi
-} // namespace sycl_toolkit
+} // namespace fpga_tools
 
 #endif /* __PIPE_UTILS_HPP__ */

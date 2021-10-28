@@ -10,7 +10,6 @@
 
 
 using namespace sycl;
-namespace fpga_tools = sycl_toolkit::oneapi::fpga;
 
 constexpr float kTestData = 555;
 constexpr size_t kEngines = 5;

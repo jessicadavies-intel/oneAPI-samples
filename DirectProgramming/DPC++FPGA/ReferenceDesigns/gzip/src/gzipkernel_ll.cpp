@@ -54,8 +54,6 @@
 
 using namespace sycl;
 
-namespace fpga_tools = sycl_toolkit::oneapi::fpga;
-
 // Pipes, for inter-kernel data transfer..
 using acc_dist_channel_array = fpga_tools::PipeArray< // From pipe_utils.hpp
     class dist_channel_pipe_id,            // An identifier for the pipe.

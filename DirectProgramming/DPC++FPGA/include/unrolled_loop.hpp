@@ -32,7 +32,7 @@
 // Example usage for UnrolledLoop:
 //
 // Base: iterations are passed as an argument to UnrolledLoop
-//    /* i is of type int */
+//    /* i is a std::integral_constant wrapping a static constant of type int */
 //    UnrolledLoop(std::integer_sequence<int,5,2,7,8>{},[&](auto i) {
 //      /* i = 5,2,7,8 */
 //    });
@@ -40,19 +40,19 @@
 // Cases A-D: iterations are described by explicit template parameters
 //
 // Case A
-//    /* i is of type int */
+//    /* i is a std::integral_constant wrapping a static constant of type int */
 //    UnrolledLoop<int, 10>([&](auto i) {
 //      /* i = 0,1,...,9 */
 //    });
 //
 // Case B
-//    /* i is of type std::size_t */
+//    /* i is a std::integral_constant wrapping a static constant of
+//       type std::size_t */
 //    UnrolledLoop<10>([&](auto i) {
 //      /* i = 0,1,...,9 */
 //    });
 //
 // Case C
-//    /* i is of type char */
 //    /* note iterations start at 1 rather than 0 */
 //    UnrolledLoop<char, 1, 10>([&](auto i) {
 //      /* i = 1,2,...,9 */
@@ -63,7 +63,6 @@
 //    });
 //
 // Case D
-//    /* i is of type std::size_t */
 //    UnrolledLoop<1, 10>([&](auto i) {
 //      /* i = 1,2,...,9 */
 //    });
@@ -73,6 +72,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace fpga_tools {
 
 // =============================================================
 // Internal Helper Functions/Structs
@@ -129,10 +129,6 @@ using make_index_range = integer_range<std::size_t, begin, end>;
 
 } // namespace detail
 
-namespace sycl_toolkit {
-namespace oneapi {
-namespace fpga {
-
 //
 // Base implementation
 // Templated on:
@@ -187,8 +183,5 @@ constexpr void UnrolledLoop(F&& f) {
   UnrolledLoop(detail::make_index_range<start, end>{}, std::forward<F>(f));
 }
 
-} // namespace fpga
-} // namespace oneapi
-} // namespace sycl_toolkit
-
+} // namespace fpga_tools
 #endif /* __UNROLLED_LOOP_HPP__ */

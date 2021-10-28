@@ -70,7 +70,6 @@ event SubmitForwardSubstitutionKernel(queue& q) {
 
   auto e = q.submit([&](handler& h) {
     h.single_task<ForwardSubstitutionKernelName>([=] {
-      namespace fpga_tools = sycl_toolkit::oneapi::fpga;
 
       // do not proceed until the first set of y vectors are available
       // Data in this pipe is always true, so we know update_y_vectors will be

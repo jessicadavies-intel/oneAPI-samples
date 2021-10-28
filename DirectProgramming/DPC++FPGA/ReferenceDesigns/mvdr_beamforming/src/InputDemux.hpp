@@ -58,7 +58,6 @@ event SubmitInputDemuxKernel(
 
   auto e = q.submit([&](handler& h) {
     h.single_task<InputDemuxKernelName>([=] {
-      namespace fpga_tools = sycl_toolkit::oneapi::fpga;
 
       constexpr int kReadsPerTrainingMatrix = k_training_size / k_pipe_width;
       constexpr int kMaxReadsPerXrxDataMatrix =

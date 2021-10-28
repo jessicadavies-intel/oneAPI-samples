@@ -10,8 +10,6 @@
 // Included from DirectProgramming/DPC++FPGA/include
 #include "unrolled_loop.hpp"
 
-namespace fpga_tools = sycl_toolkit::oneapi::fpga;
-
 /*
 The sort() function in this header implements a local-memory-based FIFO-Based
 Merge Sorter, which has been based on the architecture shown in Figure 8c) of

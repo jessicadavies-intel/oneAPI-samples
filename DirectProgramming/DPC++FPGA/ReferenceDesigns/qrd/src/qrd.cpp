@@ -39,8 +39,6 @@
 using std::vector;
 using namespace sycl;
 
-namespace fpga_tools = sycl_toolkit::oneapi::fpga;
-
 struct MyComplex {
   float xx;
   float yy;

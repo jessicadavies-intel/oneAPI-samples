@@ -16,8 +16,6 @@
 using namespace sycl;
 using namespace std::chrono;
 
-namespace fpga_utils = sycl_toolkit::oneapi::fpga;
-
 // kernel class names
 class ProducePartSupplier;
 class JoinPartSupplierParts;

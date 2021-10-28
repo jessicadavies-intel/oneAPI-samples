@@ -62,7 +62,6 @@ template <typename T, size_t k_num_cols_in, size_t k_pipe_width,
           typename MatrixInPipe, typename MatrixOutPipe>
 struct Transposer {
   void operator()() const {
-    namespace fpga_tools = sycl_toolkit::oneapi::fpga;
     using PipeType = NTuple<T, k_pipe_width>;
 
     // This is a scratch pad memory that we will use to do the transpose.

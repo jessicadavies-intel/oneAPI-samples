@@ -20,8 +20,6 @@
 using namespace sycl;
 using namespace std::chrono;
 
-namespace fpga_utils = sycl_toolkit::oneapi::fpga;
-
 //
 // NOTE: See the README file for a diagram of how the different kernels are
 // connected

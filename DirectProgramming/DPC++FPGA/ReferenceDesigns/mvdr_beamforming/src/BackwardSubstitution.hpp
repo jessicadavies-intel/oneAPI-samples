@@ -64,7 +64,6 @@ event SubmitBackwardSubstitutionKernel(queue& q) {
 
   auto e = q.submit([&](handler& h) {
     h.single_task<BackwardSubstitutionKernelName>([=] {
-      namespace fpga_tools = sycl_toolkit::oneapi::fpga;
 
       while (1) {
         CalcType u_matrix[k_vector_size][kNumCalcTypePerVector];

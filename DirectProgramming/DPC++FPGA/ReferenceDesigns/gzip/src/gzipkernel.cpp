@@ -8,8 +8,6 @@
 
 using namespace sycl;
 
-namespace fpga_tools = sycl_toolkit::oneapi::fpga;
-
 int GetHuffLiteralBits(unsigned char ch) {
   CtData static_ltree[kLCodes + 2] = {
       {12, 8},  {140, 8}, {76, 8},  {204, 8}, {44, 8},  {172, 8}, {108, 8},

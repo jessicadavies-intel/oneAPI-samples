@@ -113,7 +113,7 @@ inline float BilateralFilter1D(ShiftReg<PixelT, filter_size>& buffer,
 
   // convert unsigned pixels to signed
   ShiftReg<SignedPixelT, filter_size> buffer_signed;
-  sycl_toolkit::oneapi::fpga::UnrolledLoop<filter_size>([&](auto i) {
+  fpga_tools::UnrolledLoop<filter_size>([&](auto i) {
     buffer_signed[i] = static_cast<SignedPixelT>(buffer[i]);
   });
 
@@ -121,7 +121,7 @@ inline float BilateralFilter1D(ShiftReg<PixelT, filter_size>& buffer,
   ShiftReg<float, filter_size_eff> bilateral_filter;
   float filter_sum = 0.0;
 
-  sycl_toolkit::oneapi::fpga::UnrolledLoop<filter_size_eff>([&](auto i) {
+  fpga_tools::UnrolledLoop<filter_size_eff>([&](auto i) {
     // get the absolute value of the pixel differences
     float intensity_diff_squared;
     if constexpr (mid_idx == (i * 2)) {
@@ -173,7 +173,7 @@ inline float BilateralFilter1D(ShiftReg<PixelT, filter_size>& buffer,
 
   // Convolve the 1D bilateral filter with the pixel window
   float filtered_pixel = 0.0;
-  sycl_toolkit::oneapi::fpga::UnrolledLoop<filter_size_eff>([&](auto i) {
+  fpga_tools::UnrolledLoop<filter_size_eff>([&](auto i) {
     filtered_pixel += (float(buffer[i * 2]) * bilateral_filter[i]);
   });
   
@@ -248,7 +248,7 @@ struct HorizontalFunctor {
     // grab just the pixel data, pixel_n is the 'new' pixel forwarded from the
     // vertical kernel (i.e., the partially filtered one)
     ShiftReg<PixelT, filter_size> buffer_pixels;
-    sycl_toolkit::oneapi::fpga::UnrolledLoop<filter_size>([&](auto i) {
+    fpga_tools::UnrolledLoop<filter_size>([&](auto i) {
       buffer_pixels[i] = buffer[i].pixel_n;
     });
 

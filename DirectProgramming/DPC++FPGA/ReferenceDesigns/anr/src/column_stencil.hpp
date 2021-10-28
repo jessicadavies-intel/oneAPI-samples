@@ -66,8 +66,6 @@ template <typename InType, typename OutType, typename IndexT, typename InPipe,
           typename... FunctionArgTypes>
 void ColumnStencil(IndexT rows, IndexT cols, const InType zero_val,
                    StencilFunction func, FunctionArgTypes... stencil_args) {
-  namespace fpga_tools = sycl_toolkit::oneapi::fpga;
-
   // types coming into and out of the kernel from pipes, respectively
   using InPipeT = DataBundle<InType, parallel_cols>;
   using OutPipeT = DataBundle<OutType, parallel_cols>;
